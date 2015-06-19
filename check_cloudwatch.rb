@@ -281,7 +281,7 @@ def listMetrics(namespace, instance_id)
 
   logIt("* Entering: #{thisMethod()}", DEBUG)
 
-  aws_api = AWS::CloudWatch.new()
+  aws_api = Aws::CloudWatch::Client.new()
 
   case namespace
     when AWS_NAMESPACE_EC2
@@ -307,7 +307,7 @@ def listMetrics(namespace, instance_id)
   end
 
   begin
-    metrics = aws_api.client.list_metrics({:namespace=> namespace, :dimensions =>dimensions}).data[:metrics]
+    metrics = aws_api.list_metrics({:namespace=> namespace, :dimensions =>dimensions}).data[:metrics]
   rescue Exception => e
     logIt("ERROR:   - #{e.to_s}", NORMAL)
     exit 1
@@ -331,10 +331,10 @@ end
 def listEC2Instances(noMonitoringTag, printTags)
   $stderr.puts "* Entering: #{thisMethod()}" if $debug
 
-  aws_api = AWS::EC2.new()
+  aws_api = Aws::EC2::Client.new()
   
   begin
-    response = aws_api.client.describe_instances
+    response = aws_api.describe_instances
   rescue Exception => e
     $stderr.puts "ERROR:   - #{e.to_s}"
     exit 1
@@ -404,10 +404,10 @@ end
 def listELBInstances(noMonitoringTag, printTags)
   $stderr.puts "* Entering: #{thisMethod()}" if $debug
 
-  aws_api = AWS::ELB.new()
+  aws_api = Aws::ELB.new()
 
   begin  
-    response = aws_api.client.describe_load_balancers
+    response = aws_api.describe_load_balancers
   rescue Exception => e
     $stderr.puts "ERROR:   - #{e.to_s}"
     exit 1
@@ -458,11 +458,11 @@ def EC2InstanceRunning(instanceId)
   $stderr.puts "* Entering: #{thisMethod()}" if $debug
   $stderr.puts "  - Checking running state of #{instanceId}" if $debug
 
-  aws_api = AWS::EC2.new()
+  aws_api = Aws::EC2::Client.new()
 
   #--- get the instance running state
   begin
-    response = aws_api.client.describe_instances({:instance_ids => [ instanceId ]})[:reservation_set][0][:instances_set][0][:instance_state][:name]
+    response = aws_api.describe_instances({:instance_ids => [ instanceId ]})[:reservation_set][0][:instances_set][0][:instance_state][:name]
   rescue Exception => e
     $stderr.puts "  - Instance id does not exist" if $debug
     return "instance does not exist"
@@ -498,8 +498,8 @@ def getCloudwatchStatistics(namespace, metric, statistics, dimensions, window, p
 
   
   begin
-    aws_api = AWS::CloudWatch.new()
-    metrics = aws_api.client.get_metric_statistics( params  )
+    aws_api = Aws::CloudWatch::Client.new()
+    metrics = aws_api.get_metric_statistics( params  )
   rescue Exception => e
     $stderr.puts "ERROR: Could not get cloudwatch stats: #{metric}"
     $stderr.puts "ERROR:   - #{e.to_s}"
@@ -887,13 +887,13 @@ logIt("* Setting up namespace dimensions to #{dimensions.inspect}", DEBUG)
 
 logIt("* AWS Config", DEBUG)
 
-AWS.config(config["aws"]) unless config.nil?
+Aws.config(config["aws"]) unless config.nil?
 #--- if --region was used
-AWS.config(:region => regionOverride) unless regionOverride.to_s.empty?
+Aws.config[:region] = regionOverride unless regionOverride.to_s.empty?
 #--- if --access_key was used
-AWS.config(:access_key_id => accessKeyOverride) unless accessKeyOverride.to_s.empty?
+Aws.config[:access_key_id] = accessKeyOverride unless accessKeyOverride.to_s.empty?
 #--- if --secret was used
-AWS.config(:secret_access_key => secretKeyOverride) unless secretKeyOverride.to_s.empty?
+Aws.config[:secret_access_key] = secretKeyOverride unless secretKeyOverride.to_s.empty?
 
 #--- list instances (--list-instances)
 if (scriptAction == "list-instances")
